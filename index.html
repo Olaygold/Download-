@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video Downloader</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f9;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .container {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      max-width: 400px;
+      width: 100%;
+      text-align: center;
+    }
+    h1 {
+      color: #333;
+      font-size: 1.5rem;
+      margin-bottom: 20px;
+    }
+    input[type="text"] {
+      width: calc(100% - 20px);
+      padding: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+    select {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+    button {
+      background: #007bff;
+      color: #fff;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    .error {
+      color: red;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Video Downloader</h1>
+    <input type="text" id="videoUrl" placeholder="Paste video URL here" />
+    <select id="resourceType">
+      <option value="mp4">MP4 (Video)</option>
+      <option value="mp3">MP3 (Audio)</option>
+    </select>
+    <button onclick="downloadVideo()">Download</button>
+    <p id="errorMessage" class="error"></p>
+  </div>
+
+  <script>
+    async function downloadVideo() {
+      const videoUrl = document.getElementById('videoUrl').value;
+      const resourceType = document.getElementById('resourceType').value;
+      const errorMessage = document.getElementById('errorMessage');
+
+      if (!videoUrl) {
+        errorMessage.textContent = 'Please paste a video URL.';
+        return;
+      }
+
+      errorMessage.textContent = ''; // Clear any previous error message
+
+      try {
+        const response = await fetch('http://127.0.0.1:5000/download', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ url: videoUrl, type: resourceType }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          errorMessage.textContent = errorData.error || 'An error occurred.';
+          return;
+        }
+
+        const blob = await response.blob();
+        const downloadUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        a.download = `download.${resourceType}`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      } catch (error) {
+        errorMessage.textContent = 'An error occurred while downloading.';
+      }
+    }
+  </script>
+</body>
+</html>
