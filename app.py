@@ -1,8 +1,11 @@
 from flask import Flask, request, send_file, jsonify
 from pytube import YouTube
 import os
+import tempfile
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)  # Enable CORS for all routes
 
 @app.route('/download', methods=['POST'])
 def download_video():
@@ -27,20 +30,22 @@ def download_video():
         if not stream:
             return jsonify({"error": "No suitable stream found"}), 404
 
-        # Download the video/audio
-        file_path = stream.download()
+        # Create a temporary directory for downloads
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Download the video/audio
+            file_path = stream.download(output_path=temp_dir)
 
-        # Convert audio to MP3 if needed
-        if resource_type == 'mp3':
-            base, ext = os.path.splitext(file_path)
-            mp3_path = base + '.mp3'
-            os.rename(file_path, mp3_path)
-            file_path = mp3_path
+            # Convert audio to MP3 if needed
+            if resource_type == 'mp3':
+                base, ext = os.path.splitext(file_path)
+                mp3_path = base + '.mp3'
+                os.rename(file_path, mp3_path)
+                file_path = mp3_path
 
-        # Send the file and clean up
-        response = send_file(file_path, as_attachment=True)
-        os.remove(file_path)  # Remove the file after sending
-        return response
+            # Send the file
+            response = send_file(file_path, as_attachment=True)
+
+            return response
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
